@@ -3,3 +3,4 @@ dist/
 temp/
 *.log
 .DS_Store
+hello_test*
