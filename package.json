@@ -1,0 +1,19 @@
+{
+  "name": "ohos-ets-packager",
+  "version": "1.0.0",
+  "description": "Tool to package OpenHarmony ETS binaries into an independent npm package",
+  "main": "build.js",
+  "scripts": {
+    "build": "node build.js",
+    "verify": "bash verify.sh",
+    "test": "npm run build && npm run verify"
+  },
+  "keywords": [
+    "openharmony",
+    "ets",
+    "arkcompiler",
+    "packager"
+  ],
+  "author": "",
+  "license": "ISC"
+}
