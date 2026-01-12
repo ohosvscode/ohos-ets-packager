@@ -60,9 +60,32 @@ function build() {
         copyFilesByExt(libPath, LIB_DIR, '.so');
     });
 
-    // 2. Copy binaries and create wrappers
+    // PATCH LIBRARIES: Ensure libraries can find each other in the same directory
+    console.log("Patching shared libraries (rpath)...");
+    const libFiles = fs.readdirSync(LIB_DIR);
+    libFiles.forEach(file => {
+        if (file.endsWith('.so')) {
+            const libPath = path.join(LIB_DIR, file);
+            try {
+                // Set RPATH to $ORIGIN so libs can find their neighbors
+                execSync(`patchelf --set-rpath '$ORIGIN' "${libPath}"`);
+            } catch (e) {
+                console.warn(`Failed to patch library ${file}: ${e.message}`);
+            }
+        }
+    });
+
+    // 2. Copy binaries, patch rpath, and create symlinks
     console.log("Processing binaries...");
-    const wrapperTemplate = fs.readFileSync(path.join(__dirname, 'templates/wrapper.sh'), 'utf8');
+    
+    // Check for patchelf
+    try {
+        execSync('patchelf --version');
+    } catch {
+        console.error("Error: 'patchelf' is required but not found in PATH.");
+        process.exit(1);
+    }
+
     const binMap = {};
 
     config.binaries.forEach(binaryName => {
@@ -72,17 +95,29 @@ function build() {
         }
 
         if (fs.existsSync(srcPath)) {
-            // Copy binary to lib (hidden away)
-            const destLibPath = path.join(LIB_DIR, binaryName);
-            copyFile(srcPath, destLibPath);
-            fs.chmodSync(destLibPath, '755');
-
-            // Create wrapper in bin
-            const wrapperContent = wrapperTemplate.replace(/%BINARY_NAME%/g, binaryName);
+            // Copy binary directly to bin directory (no longer hidden in lib)
+            // But wait, to keep structure clean and allow $ORIGIN/../lib to work nicely regardless of symlinks,
+            // we will put the real binary in dist/bin/
+            
+            // Strategy: 
+            // 1. Put binary in dist/bin/
+            // 2. Patch rpath to $ORIGIN/../lib
+            
             const destBinPath = path.join(BIN_DIR, binaryName);
-            fs.writeFileSync(destBinPath, wrapperContent);
+            copyFile(srcPath, destBinPath);
             fs.chmodSync(destBinPath, '755');
-            console.log(`Created wrapper: ${destBinPath}`);
+
+            // Patch RPATH
+            try {
+                // $ORIGIN is a literal string for the loader, so we must escape it for shell if needed. 
+                // But in node execSync with string, simple quoting works.
+                // We want rpath to be: $ORIGIN/../lib
+                const rpathCMD = `patchelf --set-rpath '$ORIGIN/../lib' "${destBinPath}"`;
+                execSync(rpathCMD);
+                console.log(`Patched RPATH for: ${binaryName}`);
+            } catch (e) {
+                console.warn(`Failed to patch ${binaryName}: ${e.message}`);
+            }
 
             binMap[binaryName] = `./bin/${binaryName}`;
         } else {
