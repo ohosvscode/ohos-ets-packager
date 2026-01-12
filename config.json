@@ -1,0 +1,27 @@
+{
+  "ohosRoot": "/home/sanchuanhehe/Documents/openharmony/src",
+  "outDirRelative": "out/rk3568/clang_x64",
+  "frontend": "arkcompiler/ets_frontend",
+  "runtime": "arkcompiler/ets_runtime",
+  "thirdparty": {
+    "icu": "thirdparty/icu",
+    "zlib": "thirdparty/zlib"
+  },
+  "binaries": [
+    "es2abc",
+    "es2panda",
+    "merge_abc",
+    "ark_js_vm",
+    "ark_aot_compiler",
+    "ark_stub_compiler",
+    "profdump",
+    "quick_fix"
+  ],
+  "npmPackage": {
+    "name": "ets-toolkits",
+    "version": "0.0.1",
+    "description": "Full OpenHarmony ETS Toolchain",
+    "author": "OpenHarmony Contributor",
+    "license": "Apache-2.0"
+  }
+}
